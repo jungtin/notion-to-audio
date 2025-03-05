@@ -28,7 +28,7 @@ def clean_output_directory(output_dir: str = "output") -> None:
     # Ensure the directory exists
     os.makedirs(output_dir, exist_ok=True)
 
-def page_to_txt(page: NotionPage, output_dir: str) -> str:
+def page_to_txt(page: NotionPage, output_dir: str, index: int) -> str:
     """Convert a Notion page to TXT and return the file path."""
     # Create output directory if it doesn't exist
     output_dir = os.path.join(output_dir, "sources")
@@ -36,7 +36,7 @@ def page_to_txt(page: NotionPage, output_dir: str) -> str:
     
     # Create a safe filename from the page title
     safe_title = "".join(c if c.isalnum() else "_" for c in page.title)
-    txt_path = os.path.join(output_dir, f"{safe_title}.txt")
+    txt_path = os.path.join(output_dir, f"{index} - {safe_title}.txt")
     
     # Open text file and write content
     with open(txt_path, 'w', encoding='utf-8') as txt_file:

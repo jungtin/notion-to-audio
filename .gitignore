@@ -35,5 +35,7 @@ ENV/
 # Misc
 .DS_Store
 
-output/
+output*/
 fonts/
+transcripts/
+audios/

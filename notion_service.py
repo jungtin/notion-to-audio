@@ -90,7 +90,8 @@ def extract_page_content(notion: Client, page: Dict[str, Any]) -> NotionPage:
     
     except Exception as e:
         print(f"Error processing page: {e}")
-        return NotionPage(id="", title="Error", blocks=[])
+        # return NotionPage(id="", title="Error", blocks=[])
+        return None
 
 def print_page(page: NotionPage) -> None:
     """Print the page content in a formatted way."""

@@ -15,7 +15,7 @@ def process_page(notion, page_data, index):
         # print_page(page)
         
         # Convert page to text file
-        txt_path = page_to_txt(page, OUTPUT_DIR)
+        txt_path = page_to_txt(page, OUTPUT_DIR, index + 1)
         return {
             "index": index,
             "txt_path": txt_path,
