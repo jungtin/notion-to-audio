@@ -5,8 +5,8 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from PyPDF2 import PdfMerger
 
-from dto import NotionPage
-from font_manager import ensure_font_available
+from notion_extract.dto.notion_dto import NotionPage
+from notion_extract.helper.font_manager import ensure_font_available
 import shutil
 
 def clean_output_directory(output_dir: str = "output") -> None:

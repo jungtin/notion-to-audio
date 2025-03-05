@@ -1,6 +1,6 @@
 # Notion Database to PDF Exporter
 
-This script allows you to export all pages from a Notion database to PDF format and merge them into a single PDF file. It uses Notion's official API to handle the exports.
+This script allows you to export all pages from a Notion database to PDF format and merge them into a single PDF file. It uses Notion's official API to handle the exports. The project is organized into packages for better code structure.
 
 ## Setup
 
@@ -37,7 +37,7 @@ NOTION_DATABASE_ID=your_database_id_here
 
 Run the script:
 ```bash
-python notion_to_pdf.py
+python -m notion_extract.notion_to_pdf
 ```
 
 The script will:
@@ -53,4 +53,12 @@ This script uses:
 - PyPDF2 to merge the individual PDFs into a single file
 
 ## Note
-Make sure your Notion integration has access to the database and all its pages before running the script. 
+Make sure your Notion integration has access to the database and all its pages before running the script.
+
+## Project Structure
+The project is organized into the following packages:
+- `notion_extract`: Contains the main scripts for exporting Notion databases to PDFs and text
+  - `dto`: Data transfer objects for Notion API
+  - `helper`: Helper services for Notion operations
+- `audio_maker`: Scripts for generating audio from text
+- `transcript_maker`: Scripts for generating transcripts

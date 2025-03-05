@@ -1,7 +1,7 @@
 import os
 import shutil
 from typing import List
-from dto import NotionPage
+from notion_extract.dto.notion_dto import NotionPage
 
 def clean_output_directory(output_dir: str = "output") -> None:
     """

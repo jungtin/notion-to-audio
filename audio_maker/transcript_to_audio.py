@@ -5,7 +5,7 @@ import time
 from typing import List, Dict, Any
 import concurrent.futures
 
-from tts_generator import TTSGenerator, DEFAULT_LANG_CODE, DEFAULT_VOICE, DEFAULT_SPEED
+from audio_maker.tts_generator import TTSGenerator, DEFAULT_LANG_CODE, DEFAULT_VOICE, DEFAULT_SPEED
 
 # Configure logging
 logging.basicConfig(
@@ -15,8 +15,8 @@ logging.basicConfig(
 logger = logging.getLogger("transcript_to_audio")
 
 # Configuration constants
-TRANSCRIPTS_DIR = "transcripts"
-AUDIOS_DIR = "audios"
+TRANSCRIPTS_DIR = "output/transcripts"
+AUDIOS_DIR = "output/audios"
 MAX_WORKERS = 4  # Number of parallel workers for processing
 SPLIT_PATTERN = r'\n\n+'  # Pattern to split transcripts into segments
 

@@ -4,10 +4,10 @@ import concurrent.futures
 from dotenv import load_dotenv
 
 # Import from our new modules
-from notion_service import init_notion_client, get_database_pages, extract_page_content, print_page
-from pdf_generator import page_to_pdf, merge_pdfs, clean_output_directory
+from notion_extract.helper.notion_service import init_notion_client, get_database_pages, extract_page_content, print_page
+from notion_extract.helper.pdf_generator import page_to_pdf, merge_pdfs, clean_output_directory
 
-OUTPUT_DIR = "output"
+OUTPUT_DIR = "output/pdf"
 
 def process_page(notion, page_data, index):
     """Process a single page and return its data along with the original index"""

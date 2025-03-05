@@ -2,7 +2,7 @@ import os
 from dotenv import load_dotenv
 from notion_client import Client
 from typing import Dict, Any, List
-from dto import NotionBlock, NotionPage
+from notion_extract.dto.notion_dto import NotionBlock, NotionPage
 
 def init_notion_client() -> Client:
     """Initialize and return the Notion client."""
