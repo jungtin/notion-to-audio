@@ -34,3 +34,6 @@ ENV/
 
 # Misc
 .DS_Store
+
+output/
+fonts/
