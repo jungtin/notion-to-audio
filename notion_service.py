@@ -100,4 +100,4 @@ def print_page(page: NotionPage) -> None:
     
     for block in page.blocks:
         indent_str = "  - " * block.indent_level
-        # print(f"{indent_str}{block.type.capitalize()}: {block.content}")
+        print(f"{indent_str}{block.type.capitalize()}: {block.content}")

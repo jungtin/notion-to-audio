@@ -73,7 +73,7 @@ def ensure_font_available(font_name="DejaVuSans", font_url=None):
         if not os.path.exists(font_path):
             print(f"Font file not found: {font_path}")
             return False
-        print(f"Using {font_name} {style} font: {font_path}")
+        # print(f"Using {font_name} {style} font: {font_path}")
     
     # Register fonts with reportlab
     try:

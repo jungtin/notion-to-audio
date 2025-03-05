@@ -7,10 +7,37 @@ from PyPDF2 import PdfMerger
 
 from dto import NotionPage
 from font_manager import ensure_font_available
+import shutil
 
-def page_to_pdf(page: NotionPage, output_dir: str = "output") -> str:
+def clean_output_directory(output_dir: str = "output") -> None:
+    """
+    Cleans the output directory by removing all files and subdirectories.
+    Creates the directory if it doesn't exist.
+    
+    Args:
+        output_dir: Path to the output directory to clean
+    """
+    
+    # Check if directory exists
+    if os.path.exists(output_dir):
+        print(f"Cleaning output directory: {output_dir}")
+        # Remove all contents
+        for item in os.listdir(output_dir):
+            item_path = os.path.join(output_dir, item)
+            if os.path.isfile(item_path):
+                os.unlink(item_path)
+            elif os.path.isdir(item_path):
+                shutil.rmtree(item_path)
+    else:
+        print(f"Creating output directory: {output_dir}")
+        
+    # Ensure the directory exists
+    os.makedirs(output_dir, exist_ok=True)
+
+def page_to_pdf(page: NotionPage, output_dir: str) -> str:
     """Convert a Notion page to PDF and return the file path."""
     # Create output directory if it doesn't exist
+    output_dir = os.path.join(output_dir, "sources")
     os.makedirs(output_dir, exist_ok=True)
     
     # Create a safe filename from the page title
@@ -67,7 +94,7 @@ def page_to_pdf(page: NotionPage, output_dir: str = "output") -> str:
         
         # Add block type prefix for certain types
         if block.type not in ['heading_1', 'heading_2', 'heading_3', 'paragraph']:
-            block_text = f"{block.type.capitalize()}: {block_text}"
+            block_text = f"{block_text}"
         
         # Add paragraph to content
         content.append(Paragraph(block_text, style))
@@ -75,11 +102,11 @@ def page_to_pdf(page: NotionPage, output_dir: str = "output") -> str:
     
     # Build the PDF
     doc.build(content)
-    print(f"Created PDF: {pdf_path}")
+    # print(f"Created PDF: {pdf_path}")
     
     return pdf_path
 
-def merge_pdfs(pdf_paths: List[str], output_path: str = "output/combined.pdf") -> str:
+def merge_pdfs(pdf_paths: List[str], output_path: str = "combined.pdf") -> str:
     """Merge multiple PDFs into a single file."""
     # Create output directory if it doesn't exist
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
