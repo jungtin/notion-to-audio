@@ -9,7 +9,7 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 
 # Constants
 INPUT_DIR = "output/txt/sources"  # Directory containing text files to process
-OUTPUT_DIR = "transcripts"    # Directory to save generated transcripts
+OUTPUT_DIR = "output/transcripts-parallel"    # Directory to save generated transcripts
 MAX_RETRIES = 3              # Maximum number of retries for API calls
 RETRY_DELAY = 2              # Delay between retries in seconds
 MAX_CHUNK_SIZE = 6000        # Maximum size of content chunks (in characters)
