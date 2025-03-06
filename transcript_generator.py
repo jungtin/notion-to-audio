@@ -3,15 +3,21 @@ import time
 import google.generativeai as genai
 from dotenv import load_dotenv
 from typing import List, Optional
+import concurrent.futures
+import threading
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 
 # Constants
 INPUT_DIR = "output/txt/sources"  # Directory containing text files to process
-OUTPUT_DIR = "output/transcripts"    # Directory to save generated transcripts
+OUTPUT_DIR = "transcripts"    # Directory to save generated transcripts
 MAX_RETRIES = 3              # Maximum number of retries for API calls
 RETRY_DELAY = 2              # Delay between retries in seconds
 MAX_CHUNK_SIZE = 6000        # Maximum size of content chunks (in characters)
 OVERLAP_SIZE = 200           # Overlap between chunks to maintain context
+MAX_THREADS = 2              # Maximum number of concurrent threads
+
+# Thread-local storage for the Gemini model
+thread_local = threading.local()
 
 def init_gemini_client() -> None:
     """Initialize and configure the Gemini client."""
@@ -22,6 +28,12 @@ def init_gemini_client() -> None:
         raise ValueError("GEMINI_API_KEY not found in environment variables")
     
     genai.configure(api_key=api_key)
+
+def get_model():
+    """Get or create a thread-local Gemini model instance."""
+    if not hasattr(thread_local, "model"):
+        thread_local.model = genai.GenerativeModel('gemini-2.0-flash')
+    return thread_local.model
 
 def get_text_files(directory: str) -> List[str]:
     """Get all text files from the specified directory."""
@@ -134,7 +146,7 @@ def create_educational_transcript_prompt(topic, content, part_number=0, total_pa
 
 def generate_transcript_chunk(content: str, topic: str, part_number: int = 0, total_parts: int = 1) -> Optional[str]:
     """Generate transcript for a chunk of content."""
-    model = genai.GenerativeModel('gemini-2.0-flash')
+    model = get_model()
     
     part_info = ""
     if total_parts > 1:
@@ -167,15 +179,15 @@ def generate_transcript(content: str, topic: str) -> Optional[str]:
         return generate_transcript_chunk(content, topic)
     
     # For multiple chunks, process each one and combine results
-    print(f"2. Content split into {len(content_chunks)} chunks due to size")
+    print(f"Content split into {len(content_chunks)} chunks due to size")
     transcript_parts = []
     
     for i, chunk in enumerate(content_chunks):
-        print(f" - Processing chunk {i+1}/{len(content_chunks)}...")
+        print(f"Processing chunk {i+1}/{len(content_chunks)}...")
         transcript_part = generate_transcript_chunk(chunk, topic, i, len(content_chunks))
         
         if not transcript_part:
-            print(f"2. Failed to generate transcript for chunk {i+1}")
+            print(f"Failed to generate transcript for chunk {i+1}")
             return None
         
         transcript_parts.append(transcript_part)
@@ -193,27 +205,27 @@ def save_transcript(transcript: str, output_path: str) -> None:
     with open(output_path, 'w', encoding='utf-8') as file:
         file.write(transcript)
     
-    print(f"3. Transcript saved to: {output_path}")
+    print(f"Transcript saved to: {output_path}")
 
 def process_file(file_path: str) -> bool:
     """Process a single text file and generate transcript."""
     try:
-        print(f"\n1. Processing: {file_path}")
+        print(f"Processing: {file_path}")
         content = read_text_file(file_path)
         
         if not content:
-            print(f" - No content found in {file_path}")
+            print(f"No content found in {file_path}")
             return False
         
         # Extract topic
         topic = extract_topic(content, file_path)
-        print(f" - Topic identified: {topic}")
+        print(f"Topic identified: {topic}")
         
         # Generate transcript
         transcript = generate_transcript(content, topic)
         
         if not transcript:
-            print(f" - Failed to generate transcript for {file_path}")
+            print(f"Failed to generate transcript for {file_path}")
             return False
         
         # Create output path
@@ -225,11 +237,11 @@ def process_file(file_path: str) -> bool:
         return True
         
     except Exception as e:
-        print(f" - Error processing file {file_path}: {e}")
+        print(f"Error processing file {file_path}: {e}")
         return False
 
 def main():
-    """Main function to process all text files."""
+    """Main function to process all text files concurrently using threads."""
     try:
         print("Initializing Gemini client...")
         init_gemini_client()
@@ -242,17 +254,35 @@ def main():
             return
         
         print(f"Found {len(file_paths)} text files to process")
+        print(f"Processing files with up to {MAX_THREADS} concurrent threads")
         
         # Create output directory if it doesn't exist
         os.makedirs(OUTPUT_DIR, exist_ok=True)
         
-        # Process each file
+        # Create a thread pool and submit all files for processing
         success_count = 0
-        for file_path in file_paths:
-            if process_file(file_path):
-                success_count += 1
+        failed_files = []
+        
+        with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_THREADS) as executor:
+            # Submit all tasks and store future objects with their file paths
+            future_to_file = {executor.submit(process_file, file_path): file_path for file_path in file_paths}
+            
+            # Process results as they complete
+            for future in concurrent.futures.as_completed(future_to_file):
+                file_path = future_to_file[future]
+                try:
+                    if future.result():
+                        success_count += 1
+                    else:
+                        failed_files.append(os.path.basename(file_path))
+                except Exception as e:
+                    print(f"Error in thread processing {file_path}: {e}")
+                    failed_files.append(os.path.basename(file_path))
         
         print(f"\nProcessing complete: {success_count} of {len(file_paths)} transcripts generated successfully")
+        
+        if failed_files:
+            print(f"Failed files: {', '.join(failed_files)}")
         
     except Exception as e:
         print(f"Error: {e}")

@@ -17,7 +17,7 @@ logger = logging.getLogger("transcript_to_audio")
 # Configuration constants
 TRANSCRIPTS_DIR = "output/transcripts"
 AUDIOS_DIR = "output/audios"
-MAX_WORKERS = 4  # Number of parallel workers for processing
+MAX_WORKERS = 2  # Number of parallel workers for processing
 SPLIT_PATTERN = r'\n\n+'  # Pattern to split transcripts into segments
 
 def get_transcript_files(directory: str) -> List[str]:
