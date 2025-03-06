@@ -121,5 +121,13 @@ The project is organized into the following packages:
 - Access to an LLM API (like OpenAI GPT)
 - Text-to-speech service access
 
-## License
-[Specify your license here]
+## MIT License
+
+Copyright (c) 2025 
+
+This is open source software that can be freely shared with anyone. The MIT License allows for:
+- Free use, modification, and distribution
+- Education use
+- Private use
+- No warranty or liability for the software creators
+- No commercial use

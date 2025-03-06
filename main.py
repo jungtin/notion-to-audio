@@ -73,9 +73,9 @@ def run_transcript_generation() -> None:
     """Run the transcript generation process."""
     print("\nGenerating transcripts from source files...")
     try:
-        from transcript_maker import transcript_generator
-        importlib.reload(transcript_generator)  # Ensure fresh module
-        transcript_generator.main()
+        from transcript_maker import transcript_generator_parallel
+        importlib.reload(transcript_generator_parallel)  # Ensure fresh module
+        transcript_generator_parallel.main()
         print("\nTranscript generation completed!")
     except Exception as e:
         logger.error(f"Failed to generate transcripts: {e}")
@@ -109,9 +109,9 @@ def run_full_workflow() -> None:
     # Step 2: Generate transcripts
     print("\n[Step 2/3] Generating transcripts...")
     try:
-        from transcript_maker import transcript_generator
-        importlib.reload(transcript_generator)
-        transcript_generator.main()
+        from transcript_maker import transcript_generator_parallel
+        importlib.reload(transcript_generator_parallel)
+        transcript_generator_parallel.main()
         print("✓ Transcript generation completed!")
     except Exception as e:
         logger.error(f"Failed during transcript generation: {e}")

@@ -6,6 +6,7 @@ from typing import List, Optional
 import concurrent.futures
 import threading
 from langchain.text_splitter import RecursiveCharacterTextSplitter
+from transcript_maker.prompt import create_educational_transcript_prompt
 
 # Constants
 INPUT_DIR = "output/txt/sources"  # Directory containing text files to process
@@ -18,6 +19,10 @@ MAX_THREADS = 2              # Maximum number of concurrent threads
 
 # Thread-local storage for the Gemini model
 thread_local = threading.local()
+
+def get_worker_id():
+    """Get a short identifier for the current thread."""
+    return f"Worker-{threading.current_thread().name.split('-')[-1]}"
 
 def init_gemini_client() -> None:
     """Initialize and configure the Gemini client."""
@@ -53,7 +58,7 @@ def read_text_file(file_path: str) -> str:
         with open(file_path, 'r', encoding='utf-8') as file:
             return file.read()
     except Exception as e:
-        print(f"Error reading file {file_path}: {e}")
+        print(f" Error reading file {file_path}: {e}")
         return ""
 
 def extract_topic(content: str, filename: str) -> str:
@@ -84,66 +89,6 @@ def split_content(content: str) -> List[str]:
     
     return chunks
 
-def create_educational_transcript_prompt(topic, content, part_number=0, total_parts=1, part_info=""):
-    """
-    Generates a prompt for creating an educational transcript from technical content.
-
-    Args:
-        topic (str): The overall topic of the educational material.
-        content (str): The raw technical content to be converted.
-        part_number (int, optional): The current part number (for multi-part series). Defaults to 0.
-        total_parts (int, optional): The total number of parts in the series. Defaults to 1.
-        part_info (str, optional):  Information about the specific part (e.g., "This part focuses on..."). Defaults to "".
-
-    Returns:
-        str: The formatted prompt string.
-    """
-
-    prompt = f"""
-        You're creating an educational transcript for a video or podcast about: {topic}
-        Please convert the following technical content into a natural, conversational transcript format. {part_info}
-
-        REQUIREMENTS:
-        1.  Include all key information from the original content.
-        2.  Use a friendly, educational tone that's easy to understand.  Speak like you're explaining it to a friend, not lecturing. Use contractions, informal phrasing where appropriate, and a friendly tone.
-        3.  Add natural transitions, questions, and explanations between concepts.  Use phrases like:
-            *   "So, what does that actually mean?"
-            *   "Now, let's move on to..."
-            *   "Think of it like this..."
-            *   "But here's the interesting part..."
-            *   "Okay, that might sound a little complicated, so let's break it down."
-            *   "You might be wondering..."
-            *   "A good example of this is..."
-            *   "In other words..."
-            *   Add some interjection sounds such as "umm", "uh-ha", "wow", "ok".
-        4.  For *every* major concept or step, include at least one "Why" question to prompt explanation of the underlying reasons or importance. Examples:
-            *   "Why is this important?"
-            *   "Why does this work?"
-            *   "Why choose this method?"
-            * "But why is that the case?"
-        5.  Make the transcript feel like a real conversation, not just reading facts.
-        6.  The transcript must be written in English.
-        7.  Remove any code snippets and focus on the *explanation* of the concepts. If code is mentioned, give a *brief, high-level* description of what it does, *not* the code itself.
-        8.  Start explaining with the question WHY.
-        {'9. Continue from the previous part in a natural way.' if part_number > 0 else ''}
-        {'10. End in a way that transitions to the next part.' if part_number < total_parts - 1 else ''}
-        11. Keep sentences short and easy to understand.
-        12. The format must be a conversational way, not instructure that focus for reading, no actual heading or subheading.
-        13. Do not include the code snippets, but explain code flow and its component meaning.
-        14. Do not use markdown, HTML, or any other formatting in the transcript. Please keep it plain text.
-        15. Do not include any URLs or external references in the transcript.
-        16. Convert numerical values to words (e.g., "5" becomes "five").
-
-        Here is the source content to convert:
-        -----------
-        {content}
-        -----------
-
-        Begin the transcript now:
-        """
-    return prompt
-
-
 def generate_transcript_chunk(content: str, topic: str, part_number: int = 0, total_parts: int = 1) -> Optional[str]:
     """Generate transcript for a chunk of content."""
     model = get_model()
@@ -162,10 +107,10 @@ def generate_transcript_chunk(content: str, topic: str, part_number: int = 0, to
             return None
         except Exception as e:
             if attempt < MAX_RETRIES - 1:
-                print(f"Attempt {attempt + 1} failed: {e}. Retrying in {RETRY_DELAY}s...")
+                print(f"[{topic}] Attempt {attempt + 1} failed: {e}. Retrying in {RETRY_DELAY}s...")
                 time.sleep(RETRY_DELAY)
             else:
-                print(f"Failed to generate transcript after {MAX_RETRIES} attempts: {e}")
+                print(f"[{topic}] Failed to generate transcript after {MAX_RETRIES} attempts: {e}")
                 return None
 
 def generate_transcript(content: str, topic: str) -> Optional[str]:
@@ -179,15 +124,15 @@ def generate_transcript(content: str, topic: str) -> Optional[str]:
         return generate_transcript_chunk(content, topic)
     
     # For multiple chunks, process each one and combine results
-    print(f"Content split into {len(content_chunks)} chunks due to size")
+    print(f"[{topic}] Content split into {len(content_chunks)} chunks due to size")
     transcript_parts = []
     
     for i, chunk in enumerate(content_chunks):
-        print(f"Processing chunk {i+1}/{len(content_chunks)}...")
+        print(f"[{topic}] Processing chunk {i+1}/{len(content_chunks)}...")
         transcript_part = generate_transcript_chunk(chunk, topic, i, len(content_chunks))
         
         if not transcript_part:
-            print(f"Failed to generate transcript for chunk {i+1}")
+            print(f"[{topic}] Failed to generate transcript for chunk {i+1}")
             return None
         
         transcript_parts.append(transcript_part)
@@ -205,7 +150,7 @@ def save_transcript(transcript: str, output_path: str) -> None:
     with open(output_path, 'w', encoding='utf-8') as file:
         file.write(transcript)
     
-    print(f"Transcript saved to: {output_path}")
+    print(f" Transcript saved to: {output_path}")
 
 def process_file(file_path: str) -> bool:
     """Process a single text file and generate transcript."""
@@ -214,18 +159,18 @@ def process_file(file_path: str) -> bool:
         content = read_text_file(file_path)
         
         if not content:
-            print(f"No content found in {file_path}")
+            print(f" No content found in {file_path}")
             return False
         
         # Extract topic
         topic = extract_topic(content, file_path)
-        print(f"Topic identified: {topic}")
+        print(f" Topic identified: {topic}")
         
         # Generate transcript
         transcript = generate_transcript(content, topic)
         
         if not transcript:
-            print(f"Failed to generate transcript for {file_path}")
+            print(f"[{topic}] Failed to generate transcript for {file_path}")
             return False
         
         # Create output path
@@ -237,7 +182,7 @@ def process_file(file_path: str) -> bool:
         return True
         
     except Exception as e:
-        print(f"Error processing file {file_path}: {e}")
+        print(f" Error processing file {file_path}: {e}")
         return False
 
 def main():
@@ -254,7 +199,8 @@ def main():
             return
         
         print(f"Found {len(file_paths)} text files to process")
-        print(f"Processing files with up to {MAX_THREADS} concurrent threads")
+        print(f"Processing files with up to {MAX_THREADS} concurrent threads\n\n")
+        print("=========================================\n\n")
         
         # Create output directory if it doesn't exist
         os.makedirs(OUTPUT_DIR, exist_ok=True)
